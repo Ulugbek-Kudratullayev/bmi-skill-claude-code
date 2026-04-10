@@ -335,6 +335,21 @@ Metodik qo'llanma bo'yicha **6 ta kategoriya** tartibida:
 
 Snoska tartibida beriladi. Ishga kiritilmagan manbalar ro'yxatga kiritilmaydi.
 
+### FOOTNOTELAR (SNOSKALAR)
+
+Matn ichida muhim iqtiboslar, statistik ma'lumotlar va ilmiy havolalar uchun **footnote** qo'yilishi shart. Footnote sahifa pastida 10pt shriftda ko'rinadi.
+
+**Qayerlarga footnote qo'yish kerak:**
+- Prezident iqtiboslari → manba ko'rsatilsin
+- Statistik ma'lumotlar (WHO, Duke University, Grand View Research) → manba
+- Ilmiy nazariyalar birinchi marta tilga olinganda → muallif va asarning to'liq bibliografik ma'lumoti
+- PF farmonlari va qonunlar → to'liq raqam va sana
+- Texnologiya benchmark ma'lumotlari → manba
+
+**Footnote formati:** Times New Roman, 10pt, sahifa pastida avtomatik raqamlash
+
+**python-docx da qo'shish:** `add_footnotes.py` skripti orqali — oxml yordamida Word footnotes part ga yoziladi. Paragraf matnida marker so'z topiladi va unga footnote reference biriktiriladi.
+
 ### ILOVALAR
 
 **Majburiy ilovalar:**
@@ -505,6 +520,82 @@ def ref(text):
     p.paragraph_format.space_after = Pt(2)
     p.paragraph_format.first_line_indent = Cm(0)
     R(p, text)
+
+def add_footnote(paragraph, footnote_text):
+    """Paragrafga footnote (snoska) qo'shish.
+    Matn oxirida [1] raqami chiqadi, sahifa pastida izoh yoziladi.
+    """
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn as QN
+
+    # Footnotes part yaratish (agar mavjud bo'lmasa)
+    if not hasattr(doc, '_footnote_id'):
+        doc._footnote_id = 0
+        # footnotes.xml part ni yaratish
+        footnotes_part = doc.part._package.part_related_by(
+            'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes'
+        ) if any(
+            r.reltype == 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes'
+            for r in doc.part.rels.values()
+        ) else None
+
+    doc._footnote_id += 1
+    fid = doc._footnote_id
+
+    # Asosiy matnda footnote reference qo'shish
+    run = paragraph.add_run()
+    footnote_ref = OxmlElement('w:footnoteReference')
+    footnote_ref.set(QN('w:id'), str(fid))
+    run._element.append(footnote_ref)
+    # Superscript stilida ko'rsatish
+    rPr = run._element.get_or_add_rPr()
+    vertAlign = OxmlElement('w:vertAlign')
+    vertAlign.set(QN('w:val'), 'superscript')
+    rPr.append(vertAlign)
+
+    # Footnote kontentini yaratish
+    footnotes_el = doc.element.body.getparent().find(
+        QN('w:footnotes')
+    )
+    if footnotes_el is None:
+        return  # fallback: footnotes part mavjud emas
+
+    footnote = OxmlElement('w:footnote')
+    footnote.set(QN('w:id'), str(fid))
+    fp = OxmlElement('w:p')
+    fpr = OxmlElement('w:pPr')
+    fprstyle = OxmlElement('w:pStyle')
+    fprstyle.set(QN('w:val'), 'FootnoteText')
+    fpr.append(fprstyle)
+    fp.append(fpr)
+
+    # Footnote raqami
+    fr_run = OxmlElement('w:r')
+    fr_rpr = OxmlElement('w:rPr')
+    fr_style = OxmlElement('w:rStyle')
+    fr_style.set(QN('w:val'), 'FootnoteReference')
+    fr_rpr.append(fr_style)
+    fr_run.append(fr_rpr)
+    fr_ref = OxmlElement('w:footnoteRef')
+    fr_run.append(fr_ref)
+    fp.append(fr_run)
+
+    # Footnote matni
+    ft_run = OxmlElement('w:r')
+    ft_rpr = OxmlElement('w:rPr')
+    ft_sz = OxmlElement('w:sz')
+    ft_sz.set(QN('w:val'), '20')  # 10pt
+    ft_rpr.append(ft_sz)
+    ft_run.append(ft_rpr)
+    ft_text = OxmlElement('w:t')
+    ft_text.set(QN('xml:space'), 'preserve')
+    ft_text.text = ' ' + footnote_text
+    ft_run.append(ft_text)
+    fp.append(ft_run)
+
+    footnote.append(fp)
+    footnotes_el.append(footnote)
+    return fid
 
 def add_two_images(path1, path2, width=2.3):
     """Ikki rasm yonma-yon (jadval orqali)."""
