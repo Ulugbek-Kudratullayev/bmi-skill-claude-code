@@ -39,14 +39,18 @@ Claude Code quyidagilarni so'rashi mumkin:
 ## 5. Generatsiya jarayoni
 
 1. Mavzu tahlil qilinadi
-2. `bmi_build/diagrams/` — 10-15 ta diagramma yaratiladi
-3. `bmi_build/build_bmi.py` — hujjat generatsiya skripti yoziladi
-4. Skript ishga tushiriladi
-5. Natija: `{NOMI}_BMI.docx`
+2. Matn bo'limlarga ajratib `bmi_parts/*.md` fayllariga yoziladi
+3. `bmi_build/diagrams/` — 15-19 ta diagramma yaratiladi
+4. Agar loyiha kodi bo'lsa — skrinshot'lar olinadi
+5. `bmi_parts/build_bmi.py` — barcha .md + diagrammalar + screenshotlarni bitta .docx ga yig'adi
+6. So'z soni tekshiriladi (kamida 15,000)
+7. Natija: `{NOMI}_BMI.docx`
 
 ## Eslatma
 
 - Python 3.8+ kerak
 - `pip install python-docx matplotlib numpy` — majburiy
 - Internet kerak emas (offline ishlaydi)
-- Hujjat 40-60 sahifa, 8000-10000 so'z
+- Hujjat 70-80 sahifa, kamida 15,000 so'z (metodik qo'llanma standarti)
+- 3 ta bob: nazariy, amaliy, sinash va natijalar
+- Glossariy: 30-35 ta so'z, 3 tilda
